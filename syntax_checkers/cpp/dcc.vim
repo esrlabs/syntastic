@@ -1,5 +1,5 @@
 "============================================================================
-"File:        dpp.vim
+"File:        dcc.vim
 "Description: Syntax checking plugin for syntastic.vim
 "Maintainer:  oliver mueller <oliver.mueller at gmail dot com>
 "License:     This program is free software. It comes without any warranty,
@@ -14,6 +14,10 @@ if exists('g:loaded_syntastic_cpp_dcc_checker')
     finish
 endif
 let g:loaded_syntastic_cpp_dcc_checker = 1
+
+if !exists('g:syntastic_dcc_config_file')
+    let g:syntastic_dcc_config_file = '.syntastic_cpp_config'
+endif
 
 if !exists('g:syntastic_cpp_compiler_options')
     let g:syntastic_cpp_compiler_options = ''
@@ -31,18 +35,23 @@ function! SyntaxCheckers_cpp_dcc_IsAvailable() dict
 endfunction
 
 function! SyntaxCheckers_cpp_dcc_GetLocList() dict
+    let makeprg = self.makeprgBuild({
+                \ 'args': '-Xlint',
+                \ 'args_before': '-c -S -tPPCE200Z4VEN:simple ' .
+                \       '-g -XO -Xenum-is-best -Xsection-split -Xrtti-off ' .
+                \       '-Xexceptions-off -ew4265 -ew4504 -Xc++-abr ' .
+                \       syntastic#c#ReadConfig(g:syntastic_dcc_config_file)})
     let errorformat = '%A"%f"\, line %l: %trror (etoa:%n): %m,' .
                 \     '%A"%f"\, line %l: %tarning (etoa:%n): %m,' .
                 \     '%A"%f"\, line %l: catastrophic %trror (etoa:%n): %m,' .
                 \     '%A"%f"\, line %l: info (etoa:%n): %m,' .
-                \     '%-G %#,' .
+                \     '%-G%.%#,' .
                 \     '%Z%p^,' .
                 \     '%-G%.%#'
-    return syntastic#c#GetLocList('cpp', 'dcc', {
+    return SyntasticMake({
+        \ 'makeprg': makeprg,
         \ 'errorformat': errorformat,
-        \ 'main_flags': '-c -S -Xlint',
-        \ 'header_flags': '',
-        \ 'header_names': '\m\.\(h\|hpp\|hh\)$' })
+        \ 'defaults': {'bufnr': bufnr('')} })
 endfunction
 
 call g:SyntasticRegistry.CreateAndRegisterChecker({
